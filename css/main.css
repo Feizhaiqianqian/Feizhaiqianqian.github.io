@@ -973,3 +973,15 @@ ol li {
         padding-left: 20px;
     }
 }
+
+.content {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 16px;
+  padding: 2rem;
+}
+
+/* 确保文字清晰 */
+.article h1, .article h2, .article h3,
+.article p, .article li, .article td {
+  color: #2c3e50;
+}
