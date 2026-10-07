@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Hello World | 一十百千的EGO</title>
+    <title>给 DeepSeek Harness 写一个邮件看板插件 | 一十百千的EGO</title>
     <meta name="author" content="一十百千" />
     <meta name="description" content="" />
     <meta name="keywords" content="" />
@@ -170,14 +170,14 @@
         <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
             <div class="article">
     <div>
-        <h1>Hello World</h1>
+        <h1>给 DeepSeek Harness 写一个邮件看板插件</h1>
     </div>
     <div class="info">
         <span class="date">
             <span class="icon">
                 <i class="fa-solid fa-calendar fa-fw"></i>
             </span>
-            2026/7/11
+            2026/10/7
         </span>
         
         
@@ -189,8 +189,22 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E6%97%A5%E5%B8%B8/" style="color: #03a9f4">
-                    日常
+                <a href="/tags/DSH/" style="color: #00a596">
+                    DSH
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E6%8F%92%E4%BB%B6/" style="color: #03a9f4">
+                    插件
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E9%82%AE%E4%BB%B6/" style="color: #00a596">
+                    邮件
                 </a>
             </span>
             
@@ -199,13 +213,36 @@
     </div>
     
     <div class="content" v-pre>
-        <h2 id="欢迎来到我的博客网站"><a href="#欢迎来到我的博客网站" class="headerlink" title="欢迎来到我的博客网站"></a>欢迎来到我的博客网站</h2><p><strong>helloworld！</strong><br>这是我的第一篇测试博文，我是一十百千。很高兴在这里与大家见面！</p>
-<ul>
-<li>博客使用 Hexo 搭建</li>
-<li>主题是 Particlex</li>
-<li>当前背景是<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1JThqzwEGq/?share_source=copy_web&vd_source=3a6d7475e0784d741adbcd8076398949">DECO*27 - Monitoring (Best Friend Remix) feat. Hatsune Miku</a></li>
+        <p>我在 DeepSeek Harness（下称 DSH）里同时挂着三个邮箱账号，每次想知道有没有漏掉邮件，都得开口让 agent 去查一遍。于是写了个插件：<strong>dsh-email-board</strong> —— 把各账号的未读邮件汇总成卡片列表，挂在 DSH 右侧栏的自定义 tab 里。</p>
+<h2 id="它长什么样"><a href="#它长什么样" class="headerlink" title="它长什么样"></a>它长什么样</h2><ul>
+<li>右侧栏「开始」页里多出一个<strong>邮件看板</strong>入口，点开就是卡片列表；</li>
+<li>按账号分组，每张卡片是<strong>发件人、主题、时间</strong>，带附件的邮件和已标星的邮件各有一个小标记；</li>
+<li>顶部是未读总数和「刷新」按钮，账号 chip 可以只看某一个账号；</li>
+<li><strong>只读</strong>：不会标记已读、不会删除、不会发信。想看正文仍然用会话里的 <code>email_read</code>。</li>
 </ul>
-<p>以后应该会在这里分享我的技术笔记和生活感悟。<br>请多指教。</p>
+<h2 id="装与用"><a href="#装与用" class="headerlink" title="装与用"></a>装与用</h2><p>它依赖 <a target="_blank" rel="noopener" href="https://www.npmjs.com/package/dsh-email">dsh-email</a>（看板读它的账号设置，不自己存凭据）。在 DSH 的「插件」页填仓库目录的绝对路径安装，等价于：</p>
+<pre><code class="language-powershell">cd $env:DSH_PROFILE_DIR
+pnpm add link:&lt;dsh-email-board 绝对路径&gt;
+# 再把 &quot;dsh-email-board&quot; 追加到 package.json 的 dsh.profile.bundles
+</code></pre>
+<p>重启 DSH，打开右侧栏 → 开始页 → <strong>邮件看板</strong>。取数是手动的：打开时拉一次，之后只有点「刷新」才会重新读邮箱。</p>
+<h2 id="三个技术坑（写给同样想写-DSH-插件的人）"><a href="#三个技术坑（写给同样想写-DSH-插件的人）" class="headerlink" title="三个技术坑（写给同样想写 DSH 插件的人）"></a>三个技术坑（写给同样想写 DSH 插件的人）</h2><p><strong>一、pnpm 的 <code>file:</code> 依赖是快照，不是活链接。</strong> 用 <code>pnpm add file:&lt;目录&gt;</code> 装插件，pnpm 会把文件<strong>拷贝</strong>进 <code>node_modules</code>；之后你在源码目录里怎么改，宿主读的都是那份冻结副本——重启多少次都没用。要在源码目录里边改边跑，用 <code>link:&lt;绝对路径&gt;</code>（或手工建 junction），让 profile 读活文件。</p>
+<p><strong>二、改代码一定要重启 DSH。</strong> 宿主进程里的插件模块 import 一次就进了缓存；改 profile 配置（bundle 列表、patch 层）只会重载配置树，<strong>不会</strong>让宿主重新 import 模块。桌面版的 base 组合包以 <code>hmr.root: []</code> 启动，等于关掉了模块文件监听，所以也没有热重载可指望。配置重载唯一能救的是「新装的插件」——全新模块，缓存里没有它。</p>
+<p><strong>三、受限环境里 git 推送可能卡在 TLS 阶段。</strong> git 默认走 Windows schannel，在某些受限令牌下会报 <code>SEC_E_NO_CREDENTIALS</code>；换成 OpenSSL 后端就能过：</p>
+<pre><code class="language-powershell">git -c http.sslBackend=openssl push -u origin main
+</code></pre>
+<p>另外凭据助手需要创建命名管道，权限更紧的环境下会被拒——那一次操作得放宽权限，或者干脆在有代理的终端里自己推。</p>
+<h2 id="实现三两句话"><a href="#实现三两句话" class="headerlink" title="实现三两句话"></a>实现三两句话</h2><p>插件分两半。<strong>宿主半侧</strong>不复制 dsh-email 的任何内部实现，只读它的设置行，再用它公开导出的 <code>resolveEmailSettings</code> &#x2F; <code>toEmailConfig</code> &#x2F; <code>EmailPool</code> 取每个账号的未读信封——也就是 <code>email_list</code> 的那套实现，只是不经过模型；结果挂到一条同源只读路由上。<strong>客户端半侧</strong>注册右侧栏的 tab 类型与正文槽位（<code>sidebar.right.pane.tab</code>），拿到 JSON 渲染卡片。</p>
+<p>那条只读路由带同源判定：<code>Sec-Fetch-Site</code> 不是 <code>same-origin</code>&#x2F;<code>none</code> 一律 403，非 GET 一律 405。未读邮件的标题和发件人是隐私，不该被任意网页一次 GET 读走。</p>
+<p>路由还有一个 20 秒的短路缓存和「同一时刻只跑一轮 IMAP」的单飞，连点刷新也不会把邮箱服务器打爆。</p>
+<h2 id="番外：鲸鱼真可爱"><a href="#番外：鲸鱼真可爱" class="headerlink" title="番外：鲸鱼真可爱"></a>番外：鲸鱼真可爱</h2><p>写这个插件的时候，DSH 界面右下角一直蹲着这只鲸鱼，时不时冒一句「哦鲸鲸……」。它跟邮件看板没什么关系，但既然这篇是流水账，就顺手放上来：</p>
+<p><img src="/images/dsh-whale.png" alt="DSH 界面右下角的鲸鱼挂件"></p>
+<p><em>鲸鱼真可爱。</em></p>
+<h2 id="状态"><a href="#状态" class="headerlink" title="状态"></a>状态</h2><ul>
+<li>仓库：<strong><a target="_blank" rel="noopener" href="https://github.com/Feizhaiqianqian/dsh-email-board">https://github.com/Feizhaiqianqian/dsh-email-board</a></strong>（MIT，<code>v0.1.0</code>）</li>
+<li>已投稿 <a target="_blank" rel="noopener" href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin">awesome-dsh-plugin</a> 精选列表（市场上的插件目录就来自这份列表），等仓库满 1 天的收录门槛过了就提 PR。</li>
+<li>下一步：定时轮询（现在刻意只做手动刷新，先把渲染路径跑稳）、卡片上做交互（标记已读 &#x2F; 打开正文）。</li>
+</ul>
 
     </div>
     
